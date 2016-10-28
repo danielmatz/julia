@@ -50,14 +50,19 @@ static inline bool _feat_test(jl_codectx_t* ctx, const char *caller, int featval
 #define JL_HOOK_TEST(params,hook)           \
     ((params)->hooks.hook != jl_nothing)
 
-// NOTE: this is just a throwing version of jl_call1...
-#define JL_HOOK_CALL1(params,hook,arg1)     \
-    jl_value_t **argv;                      \
-    JL_GC_PUSHARGS(argv, 2);                \
-    argv[0] = (params)->hooks.hook;         \
-    argv[1] = arg1;                         \
-    jl_apply(argv, 2);                      \
+#define JL_HOOK_CALL(params,hook,argc,...) \
+    _hook_call<argc>((params)->hooks.hook, {__VA_ARGS__});
+
+template<int N>
+void _hook_call(jl_value_t *hook, std::array<jl_value_t*,N> args) {
+    jl_value_t **argv;
+    JL_GC_PUSHARGS(argv, N+1);
+    argv[0] = hook;
+    for (int i = 0; i < N; i++)
+        argv[i+1] = args[i];
+    jl_apply(argv, N+1);
     JL_GC_POP();
+}
 
 
 // --- string constants ---
@@ -694,6 +699,10 @@ static void error_unless(Value *cond, const std::string &msg, jl_codectx_t *ctx)
 static void raise_exception(Value *exc, jl_codectx_t *ctx,
                             BasicBlock *contBB=nullptr)
 {
+    if (JL_HOOK_TEST(ctx->params, raise_exception)) {
+
+    }
+
     if (!JL_FEAT_TEST(ctx, exceptions)) {
         llvm::Value *Trap = Intrinsic::getDeclaration(jl_Module, Intrinsic::trap);
         CallInst *TrapCall = builder.CreateCall(Trap);
