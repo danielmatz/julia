@@ -283,10 +283,13 @@ kw"__source__"
 """
     local
 
-`local` introduces a new local variable.
+`local` introduces one or more new local variables.
 See the [manual section on variable scoping](@ref scope-of-variables) for more information.
 
+`local` may be combined with assignment and destructuring.
+
 # Examples
+
 ```jldoctest
 julia> function foo(n)
            x = 0
@@ -301,6 +304,40 @@ foo (generic function with 1 method)
 julia> foo(10)
 0
 ```
+
+`local` may be combined with assignment.
+```jldoctest
+julia> function foo()
+           x = 0
+           y = 0
+           function bar()
+               local x, y = 1, 2
+               x, y
+           end
+           (x, y), bar()
+       end
+foo (generic function with 1 method)
+
+julia> foo()
+((0, 0), (1, 2))
+```
+
+`local` may be combined with destructuring.
+```jldoctest
+julia> function foo()
+           x = 0
+           y = 0
+           function bar(values)
+               local (; x, y) = values
+               x, y
+           end
+           (x, y), bar((; x= 1, y = 2))
+       end
+foo (generic function with 1 method)
+
+julia> foo()
+((0, 0), (1, 2))
+```
 """
 kw"local"
 
@@ -311,7 +348,11 @@ kw"local"
 variable of that name.
 See the [manual section on variable scoping](@ref scope-of-variables) for more information.
 
+`global` may be used to make multiple names global. It may also be combined with
+assignment and destructuring.
+
 # Examples
+
 ```jldoctest
 julia> z = 3
 3
@@ -326,6 +367,40 @@ julia> foo()
 
 julia> z
 6
+```
+
+`global` may be used with multiple names.
+```jldoctest
+julia> x, y = 1, 2
+(1, 2)
+
+julia> function foo()
+           global x, y = 2, 3
+       end
+foo (generic function with 1 method)
+
+julia> foo()
+(2, 3)
+
+julia> x, y
+(2, 3)
+```
+
+`global` may be used with destructuring.
+```jldoctest
+julia> x, y = 1, 2
+(1, 2)
+
+julia> function foo(values)
+           global (; x, y) = values
+       end
+foo (generic function with 1 method)
+
+julia> foo((; x = 2, y = 3))
+(2, 3)
+
+julia> x, y
+(2, 3)
 ```
 """
 kw"global"
